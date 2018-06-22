@@ -1,0 +1,96 @@
+                  #+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=#
+                  #											#
+                  #	       SETUP FOR AUTO-RENEWAL OF LET'S ENCRYPT SSL CERTIFICATE		                #
+                  #											#
+                  #											#
+                  #+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=# 
+
+
+Disclaimer :
+
+This setup or the scripts under them may or may not work based on the environment in which it is run. Necessary modifications has to be made in the code based on the requirement.
+
+
+STEPS IN THE SETUP :
+------------------
+
+1) Prepare necessary files
+    * Download letsacme.
+    * Create account key
+    * Generate a CSR
+    * Download sslic.php
+    * Prepare the renewcert.sh script
+2) Create an empty sub-domain.
+    * Set up redirect code in .htaccess file.
+    * Setup a cron job.
+
+
+The first step is competely preparing the files/scripts for the autorenwal process which will be done by the automated script. We have to do the second step manually. The directory structure of the letsacme directory should look like this.
+
++-- /home/user/letsacme
+|   +-- account.key
+|   +-- dom.key
+|   +-- dom.csr
+|   +-- dom.list
+|   +-- gencsr
+|   +-- gencsr.conf
+|   +-- letsacme.py
+|   +-- renewcert.sh
+|   +-- sslic.php
+
+
+CREATE AN EMPTY SUB-DOMAIN :
+--------------------------
+
+1) Log in to your cpanel and create a sub-domain named challenge in your home directory.
+2) Set "challenge" as the Document Root in the text box when creating the sub-domain.
+
+Do not install SSL in this sub-domain. It is important to note that this sub-domain is dedicated only for this purpose and refrain from using it in any other way.
+
+3) Inside this challenge directory (document root), create another directory named acme-challenge.
+
+Now open the .htaccess (create if doesn't exist) files in every document root for every domain (specified in the dom.list file) and add these lines at the beginning:
+
+..........
+
+RewriteEngine On
+RewriteBase /
+# change challenge.your-domain.org to your actual domain
+RewriteRule ^.well-known/acme-challenge/(.*)$ http://challenge.your-domain.org/acme-challenge/$1 [L,R=302]
+
+..........
+
+
+The directory structure should look like the one given below.
+
+
+challenge directory :
+-------------------
+
+Sub-domain document root: /home/user/challenge
+
++-- /home/user/challenge
+|   +-- acme-challenge
+
+
+Once all the above steps are completed it is time to setup the cron that will trigger all these scripts.
+
+To set up a cron job, login to your Cpanel and go to the Cron job section. 
+
+In the command section, put this:
+
+==========
+/bin/sh /home/user/letsacme/renewcert.sh >/home/user/letsacme/renewcert.log 2>/home/user/letsacme/renewcert_err.log
+==========
+
+Replace 'user' with your actual user name in the above command.
+
+The final cron job will look like this:
+
+===========
+0 0 1,15 * * /bin/sh /home/user/letsacme/renewcert.sh >/home/user/letsacme/renewcert.log 2>/home/user/letsacme/renewcert_err.log
+===========
+
+Do not forget to replace 'user' with your actual username. The above is a cron job that will run 1st and 15th day of every month (once in every 15 days) i.e your certificate will be renewed and installed every 15 days.
+
+
